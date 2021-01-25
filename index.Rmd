@@ -196,7 +196,7 @@ Mapa ...
   # use the Viridis color scale
   scale_fill_viridis(
     option = "magma",
-    name = "Average\nincome in CHF",
+    name = "Municípios",
     alpha = 0.8, # make fill a bit brighter
     begin = 0.1, # this option seems to be new (compared to 2016):
     # with this we can truncate the
