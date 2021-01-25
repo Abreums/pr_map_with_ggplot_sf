@@ -1,0 +1,222 @@
+---
+title: "Mapa do Paraná com gglot2 e sf"
+author: "Marcos Santos Abreu"
+date: "2020-01-21"
+output:
+  md_document:
+    variant: markdown_github
+    toc: yes
+    toc_depth: 2
+    df_print: kable
+---
+
+## Passo a passo     
+
+1. Vamos ler os dados geográficos e os dados temáticos e uní-los.    
+2. Vamos definir os dados temáticos do mapa.    
+    
+## Preparação     
+     
+Para garantir a reprodutibilidade vamos descarregar pacotes e apagar variáveis.    
+     
+```{r preparacao, echo=FALSE, message=FALSE, warning=FALSE}
+# Constantes:
+default_font_color <- "#4e4d47"
+default_background_color <- "#f5f5f2"
+#default_font_family <- "arial"
+default_caption <- paste0("Mapa PR; Code: ",
+                          "github.com/abreums/pr_map_with_ggplo_sf",
+                          "\nAuthors: Marcos Abreu (@abreums), 2021")
+# define options for saving plots
+knitr::opts_chunk$set(
+    out.width = "100%",
+    dpi = 300,
+    fig.width = 8,
+    fig.height = 6,
+    fig.path = "https://github.com/Abreums/pr_map_with_ggplot_sf/images/",
+    strip.white = T,
+    dev = "png",
+    dev.args = list(png = list(bg = default_background_color))
+)
+
+detach_all_packages <- function() {
+  basic_packages_blank <-  c("stats",
+                             "graphics",
+                             "grDevices",
+                             "utils",
+                             "datasets",
+                             "methods",
+                             "base")
+  basic_packages <- paste("package:", basic_packages_blank, sep = "")
+  package_list <- search()[
+    ifelse(unlist(gregexpr("package:", search())) == 1, TRUE, FALSE)]
+  package_list <- setdiff(package_list, basic_packages)
+  if (length(package_list) > 0)  for (package in package_list) {
+    detach(package, character.only = TRUE, unload = TRUE)
+    print(paste("package ", package, " detached", sep = ""))
+  }
+}
+
+detach_all_packages()
+
+path_to_wd <- "/Users/Marcos/workspace/pr_map_with_ggplot_sf/"
+if (is.null(path_to_wd) | !dir.exists(path_to_wd)) {
+  print("Warning: No working directory for the current user")
+} else {
+  setwd(path_to_wd)
+}
+
+# supress scientific notation
+options(scipen = 999)
+
+# unload global rstudioapi and knitr again to avoid conflicts with checkpoint
+# this is only necessary if executed within RStudio
+# outside of RStudio, namely in the knit.sh script, this causes RMarkdown
+# rendering to fail, thus should not be executed there
+if (Sys.getenv("RSTUDIO") == "1"){
+  detach_all_packages()
+}
+```
+
+## Definindo os Pacotes     
+      
+Vamos utilizar os pacotes `tidyverse`, incluindo `ggplot2` para gráficos, `sf` para processamento de dados geográficos, `raster` para trabalhar com 
+dados espaciais, e `viridis` para cores.      
+Também usaremos `cowplot` para combinar mapas de duas variáveis.    
+
+```{r, echo=TRUE, message=FALSE, warning=FALSE}
+cat("
+library(rstudioapi)
+library(tidyverse) # ggplot2, dplyr, tidyr, readr, purrr, tibble
+library(magrittr) # pipes
+library(lintr) # code linting
+library(sf) # spatial data handling
+library(raster) # raster handling (needed for relief)
+library(viridis) # viridis color scale
+library(cowplot) # stack ggplots
+library(rmarkdown)",
+file = "manifest.R")
+
+source("manifest.R")
+unlink("manifest.R")
+sessionInfo()
+```
+
+## Carregando os Dados     
+     
+### Dados Temáticos     
+     
+Ops! Ainda não terminei esta parte.     
+
+### Geodata
+
+Os dados geográficos foram baixados do site do [IBGE](https://portaldemapas.ibge.gov.br/portal.php#mapa222653).    
+        
+```{r read_geodata, echo=TRUE, message=FALSE, warning=FALSE}
+# read cantonal borders
+pr <- read_sf(dsn = "./pr_municipios",
+              layer = "PR_Municipios_2019")
+# read in raster of relief
+```
+
+
+Vamos definir o tema do mapa...     
+
+```{r}
+theme_map <- function(...) {
+  theme_minimal() +
+  theme(
+    text = element_text(
+      #font = default_font_family,
+      color = default_font_color),
+    # remove all axes
+    axis.line = element_blank(),
+    axis.text.x = element_blank(),
+    axis.text.y = element_blank(),
+    axis.ticks = element_blank(),
+    # add a subtle grid
+    panel.grid.major = element_line(color = "#dbdbd9", size = 0.2),
+    panel.grid.minor = element_blank(),
+    # background colors
+    plot.background = element_rect(fill = default_background_color,
+                                   color = NA),
+    panel.background = element_rect(fill = default_background_color,
+                                    color = NA),
+    legend.background = element_rect(fill = default_background_color,
+                                     color = NA),
+    # borders and margins
+    plot.margin = unit(c(.5, .5, .2, .5), "cm"),
+    panel.border = element_blank(),
+    panel.spacing = unit(c(-.1, 0.2, .2, 0.2), "cm"),
+    # titles
+    legend.title = element_text(size = 11),
+    legend.text = element_text(size = 9, hjust = 0,
+                               color = default_font_color),
+    plot.title = element_text(size = 15, hjust = 0.5,
+                              color = default_font_color),
+    plot.subtitle = element_text(size = 10, hjust = 0.5,
+                                 color = default_font_color,
+                                 margin = margin(b = -0.1,
+                                                 t = -0.1,
+                                                 l = 2,
+                                                 unit = "cm"),
+                                 debug = F),
+    # captions
+    plot.caption = element_text(size = 7,
+                                hjust = .5,
+                                margin = margin(t = 0.2,
+                                                b = 0,
+                                                unit = "cm"),
+                                color = "#939184"),
+    ...
+  )
+}
+```
+
+
+Mapa ... 
+
+```{r}
+(ggplot(
+  data = pr # Main data source
+  ) +
+  # use the "alpha hack" (as the "fill" aesthetic is already taken)
+  scale_alpha(name = "",
+              range = c(0.6, 0),
+              guide = F) + # suppress legend
+  # add main fill aesthetic
+  # use thin white stroke for municipality borders
+  geom_sf(
+    mapping = aes(
+      fill = "darkblue"
+      ),
+    color = "white",
+    size = 0.1
+  ) +
+  # use the Viridis color scale
+  scale_fill_viridis(
+    option = "magma",
+    name = "Average\nincome in CHF",
+    alpha = 0.8, # make fill a bit brighter
+    begin = 0.1, # this option seems to be new (compared to 2016):
+    # with this we can truncate the
+    # color scale, so that extreme colors (very dark and very bright) are not
+    # used, which makes the map a bit more aesthetic
+    end = 0.9,
+    discrete = T, # discrete classes, thus guide_legend instead of _colorbar
+    direction = 1, # dark is lowest, yellow is highest
+    guide = guide_legend(
+     keyheight = unit(5, units = "mm"),
+     title.position = "top",
+     reverse = T # display highest income on top
+  )) +
+  # add titles
+  labs(x = NULL,
+         y = NULL,
+         title = "Paraná",
+         subtitle = "Divisão Regional",
+         caption = default_caption) +
+  # add theme
+  theme_map()
+)
+```
